@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/QtWidgetsApplication1">
+        <file>buergerserviceorg.jpg</file>
+    </qresource>
+</RCC>
