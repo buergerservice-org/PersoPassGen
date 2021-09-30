@@ -22,6 +22,8 @@ internetaccess
 -------------
 installation:
 -------------
+for qt you have to deploy qt with deployprogram in the qt bin directory.   
+
 Microsoft wrote in point 6 that its possible to copy the crt-dlls with an release-app:   
 https://devblogs.microsoft.com/cppblog/introducing-the-universal-crt/
 
