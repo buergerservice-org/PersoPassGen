@@ -6,7 +6,7 @@ Version: 0.1
 Author: buergerservice.org e.V. <KeePerso@buergerservice.org>  
 
 
-![Screenshot1](screenshot1.jpg)
+![Screenshot1](PersoPassGen/screenshot1.JPG)
 
 -------------
 requirements:
