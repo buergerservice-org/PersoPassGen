@@ -37,7 +37,7 @@ known problems and questions
 ----------------------------
 
 is my PIN safe?  
-	- you can use a cardreader with keypad or smartphone with activated PIN-input, then the plugin cant see the PIN.  
+	- you can use a cardreader with keypad or smartphone with activated PIN-input, then the program cant see the PIN.  
 
 what data of my Personalausweis is used for the key?  
 	like you can see in the source used are this data  
