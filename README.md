@@ -1,5 +1,6 @@
 # PersoPassGen
-Generates a Password from german Personalausweis-data with a leading uppercase and a specialsign   
+Generates a Password from german Personalausweis-data with a leading uppercase and a specialsign.    
+Platformindependent for Windows and Linux.   
 
 Version: 0.1   
 Author: buergerservice.org e.V. <KeePerso@buergerservice.org>    
