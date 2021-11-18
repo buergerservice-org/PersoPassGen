@@ -52,6 +52,7 @@ what data of my Personalausweis is used for the key?
 ---------------
 versionhistory:
 ---------------
+0.2 change design
 0.1 start  
 
 
