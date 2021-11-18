@@ -5,9 +5,11 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QClipboard>
+#include <QTableWidget>
+#include <QStandardPaths>
 
 #include "stdafx.h"
-#include <string>
+//#include <string>
 #include <stdint.h>
 #include <sstream>
 
@@ -28,16 +30,16 @@ std::string generateUpperCase(int n)
 }
 
 
-std::string generateSpecialSign(int n)
+std::string generateSpecialSign(int n, std::string s)
 {
-    std::string number = ")($!=$~*-=~";
+    std::string sc = s;
     std::string x = "";
     int random = 0;
     
     for (int i = 0; i < n; i++)
     {
-        random = rand() % number.size();
-        x.append(number, random, 1);
+        random = rand() % sc.size();
+        x.append(sc, random, 1);
     }
     return x;
 }
@@ -56,16 +58,91 @@ inline unsigned int stoui(const std::string& s)
 QtWidgetsApplication1::QtWidgetsApplication1(QWidget *parent)
     : QMainWindow(parent)
 {
+    QMessageBox msgBox;
     ui.setupUi(this);
+    defaultnumberChars = 66;
+
+    //Buttons
     connect(ui.GenButton, &QPushButton::clicked, this, &QtWidgetsApplication1::on_GenButton_clicked);
     connect(ui.InputButton, &QPushButton::clicked, this, &QtWidgetsApplication1::on_InputButton_clicked);
     connect(ui.DeleteButton, &QPushButton::clicked, this, &QtWidgetsApplication1::on_DeleteButton_clicked);
+    connect(ui.NumCharButton, &QPushButton::clicked, this, &QtWidgetsApplication1::on_NumCharButton_clicked);
+    connect(ui.SpecCharButton, &QPushButton::clicked, this, &QtWidgetsApplication1::on_SpecCharButton_clicked);
 
+    //Menu
     connect(ui.actionOeffnen, &QAction::triggered, this, &QtWidgetsApplication1::on_MenuOeffnen_triggered);
     connect(ui.actionSpeichern, &QAction::triggered, this, &QtWidgetsApplication1::on_MenuSpeichern_triggered);
     connect(ui.actionHilfe, &QAction::triggered, this, &QtWidgetsApplication1::on_MenuHilfe_triggered);
     connect(ui.actionUeber, &QAction::triggered, this, &QtWidgetsApplication1::on_MenuUeber_triggered);
     connect(ui.actionZertifikat, &QAction::triggered, this, &QtWidgetsApplication1::on_MenuZertifikat_triggered);
+
+ 
+    ui.tableWidget->setColumnWidth(0, 210);
+    ui.tableWidget->setColumnWidth(1, 70);
+    ui.tableWidget->setColumnWidth(2, 110);
+
+    //read config.txt
+    if (QSysInfo::windowsVersion() == QSysInfo::WV_WINDOWS10) {
+        setStyleSheet(
+            "QHeaderView::section{"
+            "border-top:0px solid #D8D8D8;"
+            "border-left:0px solid #D8D8D8;"
+            "border-right:1px solid #D8D8D8;"
+            "border-bottom: 1px solid #D8D8D8;"
+            "background-color:white;"
+            "padding:4px;"
+            "}"
+            "QTableCornerButton::section{"
+            "border-top:0px solid #D8D8D8;"
+            "border-left:0px solid #D8D8D8;"
+            "border-right:1px solid #D8D8D8;"
+            "border-bottom: 1px solid #D8D8D8;"
+            "background-color:white;"
+            "}");
+    }
+
+    QString appconfigpath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QDir dir(appconfigpath);
+    QDir::setCurrent(appconfigpath);
+    QFile file("config.txt");
+    if (QFileInfo(file).exists())
+    {
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setWindowTitle("ERROR");
+            msgBox.setText("ERROR - could not open config.txt.\n");
+            msgBox.exec();
+            return;
+        }
+        int rc = 0;
+        QTextStream in(&file);
+        while (!in.atEnd())
+        {
+            QString line = in.readLine();
+            QStringList splitline = line.split(';');
+            //numberChars = splitline[0].toInt();
+            //specialSigns = splitline[1].toStdString();
+            //datab.append(splitline);
+            ui.tableWidget->insertRow(rc);
+            ui.tableWidget->setItem(rc, 0, new QTableWidgetItem(splitline[0]));
+            ui.tableWidget->setItem(rc, 1, new QTableWidgetItem(splitline[1]));
+            ui.tableWidget->setItem(rc, 2, new QTableWidgetItem(splitline[2]));
+            rc++;
+        }
+        //ui.tableWidget->repaint();
+    }
+    else
+    {
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setWindowTitle("Information");
+        msgBox.setText("config.txt does not exist.\n");
+        msgBox.exec();
+    }
+
+    //tableWidget
+    //connect(ui.tableWidget, &QTableWidget::cellChanged, this, &QtWidgetsApplication1::on_tablecellchanged);
+
 }
 
 void QtWidgetsApplication1::on_GenButton_clicked()
@@ -78,9 +155,17 @@ void QtWidgetsApplication1::on_GenButton_clicked()
     std::string addstr;
     QMessageBox msgBox;
     QInputDialog diaBox;
- 
     bool ok;
     
+    
+    if (ui.tableWidget->selectedItems().size() == 0)
+    {
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setText("Error - no entry selected");
+        msgBox.exec();
+        return;
+    }
 
     outputstring = w.getkeypad();
     msgBox.setIcon(QMessageBox::Critical);
@@ -210,14 +295,34 @@ void QtWidgetsApplication1::on_GenButton_clicked()
 
 
     //generate password
+    int rc = ui.tableWidget->currentRow();
+    int accnumchars = ui.tableWidget->item(rc, 1)->text().toInt();
+    std::string sch = ui.tableWidget->item(rc, 2)->text().QString::toStdString();
+
+    //------------
+    //msgBox.setText("accnumchars: "+QString::number(accnumchars) + "   specialchars: " + QString::fromStdString(sch));
+    //msgBox.exec();
+
+
     addstr = "";
-    curitem = ui.ListWidget->currentItem()->text();
-    addstr = curitem.toUtf8().constData() + outputstring;
+    curitem = ui.tableWidget->currentItem()->text();
+    addstr = curitem.toUtf8().constData() + outputstring + std::to_string(accnumchars);
     outputstring = w.sha256(addstr);
     srand(stoui(outputstring));
-    outputstring = generateUpperCase(1) + generateSpecialSign(1) + outputstring;
+
+    //------------
+    //msgBox.setText(QString::fromUtf8(outputstring.c_str())+" "+QString::number(QString::fromUtf8(outputstring.c_str()).length()));
+    //msgBox.exec();
+
+
+    outputstring = generateUpperCase(1) + generateSpecialSign(1, sch) + outputstring.substr(0, accnumchars-2);
     wfoutput = QString::fromUtf8(outputstring.c_str());
     ui.lineEdit->setText(wfoutput);
+
+    //------------
+    //msgBox.setText(wfoutput+" "+QString::number(wfoutput.length()));
+    //msgBox.exec();
+
 
     QClipboard* clipboard = QGuiApplication::clipboard();
     clipboard->setText(wfoutput);
@@ -271,18 +376,58 @@ void QtWidgetsApplication1::on_GenButton_clicked()
 
 void QtWidgetsApplication1::on_InputButton_clicked()
 {
-    ui.ListWidget->addItem(ui.lineEditInput->text());
-    ui.lineEditInput->clear();
+    QMessageBox msgBox;
+    bool ok;
+
+    QString itext = QInputDialog::getText(this,
+        tr(" "),
+        tr("Neuer Eintrag:"),
+        QLineEdit::Normal,
+        "",
+        &ok);
+
+    if (ok && !itext.isEmpty())
+    {
+        //set username in ui
+        //ui.tableWidget->addItem(itext);
+        int rc = ui.tableWidget->rowCount();
+
+        //------------
+        //msgBox.setText("rowCount: "+QString::number(rc));
+        //msgBox.exec();
+
+        ui.tableWidget->insertRow(rc);
+        ui.tableWidget->setItem(rc, 0, new QTableWidgetItem(itext));
+        ui.tableWidget->setItem(rc, 1, new QTableWidgetItem(QString::number(defaultnumberChars)));
+        ui.tableWidget->setItem(rc, 2, new QTableWidgetItem(QString::fromStdString(defaultspecialSigns)));
+        //ui->listWidget->repaint();
+    }
+    else
+    {
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setText("ERROR - Eingabedaten nicht vollstaendig.");
+        msgBox.exec();
+        return;
+    }
 }
 
 
 void QtWidgetsApplication1::on_DeleteButton_clicked()
 {
-    QList<QListWidgetItem*> items = ui.ListWidget->selectedItems();
-    foreach(QListWidgetItem * item, items)
+    QMessageBox msgBox;
+
+    if (ui.tableWidget->selectedItems().size() == 0)
     {
-        delete ui.ListWidget->takeItem(ui.ListWidget->row(item));
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setText("ERROR - no entry selected");
+        msgBox.exec();
+        return;
     }
+
+    int itemselected = ui.tableWidget->currentRow();
+    ui.tableWidget->removeRow(itemselected);
 }
 
 
@@ -290,7 +435,8 @@ void QtWidgetsApplication1::on_MenuOeffnen_triggered()
 {
     QMessageBox msgBox;
     QMessageBox::StandardButton reply;
-    if (ui.ListWidget->count() > 0)
+    //if (ui.tableWidget->count() > 0)
+    if (ui.tableWidget->rowCount()>0)
     {
         reply = msgBox.question(this, "Anhaengen", "Es sind bereits Eintraege vorhanden, Daten anhaengen?",
             QMessageBox::Yes | QMessageBox::No);
@@ -299,43 +445,65 @@ void QtWidgetsApplication1::on_MenuOeffnen_triggered()
         }
     }
     
-    QString fileName = QFileDialog::getOpenFileName(this,
-        tr("Oeffnen Tabelle"), "",
-        tr("ListTabelle (*.txt)"));
-    if (!fileName.endsWith(".txt"))
+    QFile file("config.txt");
+    if (QFileInfo(file).exists())
     {
-        fileName = fileName + ".txt";
-    }
-
-    QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return;
-
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        ui.ListWidget->addItem(line);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setWindowTitle("ERROR");
+            msgBox.setText("ERROR - could not open config.txt.\n");
+            msgBox.exec();
+            return;
+        }
+        int rc = ui.tableWidget->rowCount();
+        QTextStream in(&file);
+        while (!in.atEnd())
+        {
+            QString line = in.readLine();
+            QStringList splitline = line.split(';');
+            //numberChars = splitline[0].toInt();
+            //specialSigns = splitline[1].toStdString();
+            //datab.append(splitline);
+            ui.tableWidget->insertRow(rc);
+            ui.tableWidget->setItem(rc, 0, new QTableWidgetItem(splitline[0]));
+            ui.tableWidget->setItem(rc, 1, new QTableWidgetItem(splitline[1]));
+            ui.tableWidget->setItem(rc, 2, new QTableWidgetItem(splitline[2]));
+            rc++;
+        }
     }
 }
 
 
 void QtWidgetsApplication1::on_MenuSpeichern_triggered()
 {
-    QString fileName = QFileDialog::getSaveFileName(this,
-        tr("Speichern Tabelle"), "",
-        tr("ListTabelle (*.txt)"));
-    if (!fileName.endsWith(".txt"))
-    {
-        fileName = fileName + ".txt";
-    }
+    QMessageBox msgBox;
+    //QString fileName = QFileDialog::getSaveFileName(this,
+    //    tr("Speichern Tabelle"), "",
+    //    tr("ListTabelle (*.txt)"));
+    //if (!fileName.endsWith(".txt"))
+    //{
+    //    fileName = fileName + ".txt";
+    //}
+    QString appconfigpath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QDir dir(appconfigpath);
+    if (!dir.exists())
+        dir.mkpath(appconfigpath);
+    //-----------------
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setWindowTitle("Information");
+    msgBox.setText("config.txt will be stored in: "+appconfigpath);
+    msgBox.exec();
 
-    QFile file(fileName);
+    QDir::setCurrent(appconfigpath);
+    QFile file("config.txt");
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
         return;
 
     QTextStream out(&file);
-    for (int i = 0; i < ui.ListWidget->count(); i++) {
-        out << ui.ListWidget->item(i)->text() << "\n";
+    //for (int i = 0; i < ui.tableWidget->count(); i++) {
+    for(int i=0; i < ui.tableWidget->rowCount(); i++) {
+        out << ui.tableWidget->item(i,0)->text() << ";" << ui.tableWidget->item(i, 1)->text() <<";" << ui.tableWidget->item(i, 2)->text() << "\n";
     }
 
 }
@@ -346,7 +514,7 @@ void QtWidgetsApplication1::on_MenuHilfe_triggered()
     QMessageBox msgBox;
     QString Info;
 
-    Info = "PersoPassGen\n\nHier koennen Sie mittels der Selbstauskunft des deutschen Personalausweises Passwoerter erstellen.\n\nBitte stellen Sie sicher, dass die AusweisApp2 gestartet ist,\nein Kartenleser angeschlossen und Ihr Personalausweis aufgelegt ist.\n\nWaehlen Sie im Listenfeld einen Eintrag.\nWenn Sie dann auf <Erzeuge Passwort> klicken wird es erstellt.\nDie gelesenen Ausweisdaten werden Ihnen zur Info angezeigt.\nDas Passwort koennen Sie dann unten dem Feld <Generiertes Passwort> entnehmen.\n";
+    Info = "PersoPassGen\n\nHier koennen Sie mittels der Selbstauskunft des deutschen Personalausweises Passwoerter erstellen.\n\nBitte stellen Sie sicher, dass die AusweisApp2 gestartet ist,\nein Kartenleser angeschlossen und Ihr Personalausweis aufgelegt ist.\n\nWaehlen Sie im Listenfeld einen Eintrag.\nWenn Sie dann auf <Generiere> klicken wird es erstellt.\nDie gelesenen Ausweisdaten werden Ihnen zur Info angezeigt.\nDas Passwort koennen Sie dann unten dem Feld <Generiertes Passwort> entnehmen.\n";
     msgBox.setIcon(QMessageBox::Information);
     msgBox.setWindowTitle("Information");
     msgBox.setText(Info);
@@ -360,7 +528,7 @@ void QtWidgetsApplication1::on_MenuUeber_triggered()
     QMessageBox msgBox;
     QString Info;
 
-    Info = "PersoPassGen\nVersion 0.1\nCopyright 2021 buergerservice.org e.V. <KeePerso@buergerservice.org>\nlicense: GPL-3.0\n";
+    Info = "PersoPassGen\nVersion 0.2\nCopyright 2021 buergerservice.org e.V. <KeePerso@buergerservice.org>\nlicense: GPL-3.0\n";
     msgBox.setIcon(QMessageBox::Information);
     msgBox.setWindowTitle("Information");
     msgBox.setText(Info);
@@ -413,3 +581,117 @@ void QtWidgetsApplication1::on_MenuZertifikat_triggered()
     msgBox.setText(Info);
     msgBox.exec();
 }
+
+
+void QtWidgetsApplication1::on_NumCharButton_clicked()
+{
+    QMessageBox msgBox;
+    QString Info;
+    bool ok;
+
+
+    if (ui.tableWidget->selectedItems().size() == 0)
+    {
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setText("ERROR - no entry selected");
+        msgBox.exec();
+        return;
+    }
+
+    int iInput = QInputDialog::getInt(this,
+        tr(" "),
+        tr("Anzahl Zeichen aendern:"),
+        defaultnumberChars, 6, 66, 1,
+        &ok);
+
+    if (ok)
+    {
+        int itemselected = ui.tableWidget->currentRow();
+        ui.tableWidget->setItem(itemselected, 1, new QTableWidgetItem(QString::number(iInput)));
+
+        /*
+        QFile file("config.txt");
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            return;
+
+        QTextStream out(&file);
+        //for (int i = 0; i < ui.tableWidget->count(); i++) {
+        for (int i = 0; i < ui.tableWidget->rowCount(); i++) {
+            out << ui.tableWidget->item(i, 0)->text() << ";" << ui.tableWidget->item(i, 1)->text() << ";" << ui.tableWidget->item(i, 2)->text() << "\n";
+        }
+        */
+    }
+    else
+    {
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setText("ERROR - no input.");
+        msgBox.exec();
+        return;
+    };
+}
+
+
+void QtWidgetsApplication1::on_SpecCharButton_clicked()
+{
+    QMessageBox msgBox;
+    QString Info;
+    bool ok;
+
+
+    if (ui.tableWidget->selectedItems().size() == 0)
+    {
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setText("ERROR - no entry selected");
+        msgBox.exec();
+        return;
+    }
+
+    QString itext = QInputDialog::getText(this,
+        tr(" "),
+        tr("Aendere Sonderzeichen:"),
+        QLineEdit::Normal,
+        QString::fromStdString(defaultspecialSigns),
+        &ok);
+
+    if (ok && !itext.isEmpty())
+    {
+        int itemselected = ui.tableWidget->currentRow();
+        ui.tableWidget->setItem(itemselected, 2, new QTableWidgetItem(itext));
+
+        /*
+        QFile file("config.txt");
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            return;
+
+        QTextStream out(&file);
+        //for (int i = 0; i < ui.tableWidget->count(); i++) {
+        for (int i = 0; i < ui.tableWidget->rowCount(); i++) {
+            out << ui.tableWidget->item(i, 0)->text() << ";" << ui.tableWidget->item(i, 1)->text() << ";" << ui.tableWidget->item(i, 2)->text() << "\n";
+        }
+        */
+    }
+    else
+    {
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setWindowTitle("ERROR");
+        msgBox.setText("ERROR - no input.");
+        msgBox.exec();
+        return;
+    }
+}
+
+//void QtWidgetsApplication1::on_tablecellchanged()
+//{
+    //QFile file("config.txt");
+    //if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    //    return;
+
+    //QTextStream out(&file);
+    //for (int i = 0; i < ui.tableWidget->count(); i++) {
+    //for (int i = 0; i < ui.tableWidget->rowCount(); i++) {
+    //    out << ui.tableWidget->item(i, 0)->text() << ";" << ui.tableWidget->item(i, 1)->text() << ";" << ui.tableWidget->item(i, 2)->text() << "\n";
+    //}
+//}

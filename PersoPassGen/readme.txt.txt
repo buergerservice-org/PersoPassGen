@@ -3,7 +3,7 @@ PersoPassGen
 
 Generates a Password from german Personalausweis-data with a leading uppercase and a specialsign
 
-Version: 0.1
+Version: 0.2
 Author: buergerservice.org e.V. <KeePerso@buergerservice.org>
 
 
@@ -20,6 +20,8 @@ internetaccess
 -------------
 installation:
 -------------
+for qt you have to deploy qt with deployprogram in the qt bin directory.
+
 Microsoft wrote in point 6 that its possible to copy the crt-dlls with an release-app: 
 https://devblogs.microsoft.com/cppblog/introducing-the-universal-crt/
 
@@ -50,6 +52,7 @@ what data of my Personalausweis is used for the key?
 ---------------
 versionhistory:
 ---------------
+0.2 change design, new menu Extras
 0.1 start pilotversion
 
 
